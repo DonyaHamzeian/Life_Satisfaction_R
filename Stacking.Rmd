@@ -1,0 +1,38 @@
+---
+title: "Stacking"
+author: "Donya Hamzeian"
+date: "3/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#Stacking
+```{r}
+svm.pred.test.splitted = predict(svmfit, test_splitted, decision.values = T,  probability = TRUE)
+svm.probs.test.splitted = attr(svm.pred.test, "probabilities")[, 1]
+
+gbm.prob.test.splitted = predict(gbm.fit.splitted, test_splitted, n.trees = 1000, type = "response")
+
+rf.probs.test.splitted = predict(rf, test_splitted, type = "prob")
+# glm.pred.test = predict(glmfit, newdata = test_splitted)
+
+stacked_data = data.frame(satisfied = test_splitted$satisfied, svm = svm.probs.test.splitted, gbm = gbm.prob.test.splitted, rf = rf.probs.test.splitted )
+
+stacked_model = glm(satisfied~gbm+rf+svm ,data  = stacked_data, family = "binomial")
+
+
+print(summary(stacked_model))
+
+roc_stacked = roc(predictor = stacked_model$fitted.values,  response = test_splitted$satisfied)
+#plot(roc_gbm)
+
+auc(roc_stacked)
+
+confusionMatrix(as.factor(ifelse(stacked_model$fitted.values>0.5,1,0)), test_splitted$satisfied)
+
+```
+

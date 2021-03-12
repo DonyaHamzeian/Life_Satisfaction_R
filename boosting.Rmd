@@ -1,0 +1,600 @@
+---
+title: "boosting"
+author: "Maziar"
+date: "March 12, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+#Boosting on splitted data
+```{r}
+
+
+set.seed(20)
+
+gbm.fit.splitted = gbm((as.numeric(satisfied)-1)~., data = train_splitted, distribution = "bernoulli", n.trees = 1000, interaction.depth = 4, shrinkage = 0.01)
+
+gbm.prob.test.splitted = predict(gbm.fit.splitted, test_splitted, n.trees = 1000, type = "response")
+roc_gbm = roc(predictor = gbm.prob.test.splitted,  response = test_splitted$satisfied)
+#plot(roc_gbm)
+auc(roc_gbm)
+# confusionMatrix(as.factor(ifelse(gbm.pred.test>0.5,1,0)), test_splitted$satisfied)
+```
+
+#train-test split
+```{r}
+set.seed(10)
+inds = sample(1:nrow(train))
+f = floor(0.75*nrow(train))
+train_splitted = train[inds[1:f], ]
+test_splitted = train[inds[(f+1):nrow(train)],]
+
+```
+
+
+
+#data cleaning train_splitted
+```{r}
+
+train_splitted$satisfied = as.factor(train_splitted$satisfied)
+
+train_splitted$v3 = as.numeric(as.character(train_splitted$v3))
+train_splitted[is.na(train_splitted$v3),]$v3 = median(train_splitted$v3 , na.rm = T)
+
+train_splitted$v4 = NULL
+
+train_splitted$v5 = NULL
+
+train_splitted$v17 = NULL
+
+train_splitted$v20 = as.character((train_splitted$v20))
+train_splitted$v20 = as.factor(substring(train_splitted$v20,1,2))
+
+train_splitted$v25 = NULL
+
+train_splitted$v57= as.character(train_splitted$v57)
+train_splitted[train_splitted$v57=="5555", ]$v57= "other"
+train_splitted$v57 = as.numeric(train_splitted$v57)
+train_splitted[is.na(train_splitted$v57),]$v57 = median(train_splitted$v57 , na.rm = T)
+
+train_splitted$v59= as.character(train_splitted$v59)
+train_splitted[train_splitted$v59=="5555", ]$v59= "other"
+train_splitted$v59 = as.numeric(train_splitted$v59)
+train_splitted[is.na(train_splitted$v59),]$v59 = median(train_splitted$v59 , na.rm = T)
+
+train_splitted$v61= as.character(train_splitted$v61)
+train_splitted[train_splitted$v61=="5555", ]$v61= "other"
+train_splitted$v61 = as.numeric(train_splitted$v61)
+train_splitted[is.na(train_splitted$v61),]$v61 = median(train_splitted$v61 , na.rm = T)
+
+
+train_splitted$v63= as.character(train_splitted$v63)
+train_splitted[train_splitted$v63=="5555", ]$v63= "other"
+train_splitted$v63 = as.numeric(train_splitted$v63)
+train_splitted[is.na(train_splitted$v63),]$v63 = median(train_splitted$v63 , na.rm = T)
+
+
+train_splitted$v64 = as.numeric(as.character(train_splitted$v64))
+train_splitted[is.na(train_splitted$v64),]$v64 = median(train_splitted$v64 , na.rm = T)
+
+x= train_splitted$v69
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+
+x[as.character(train_splitted$v69)=='.a']='.a'
+x[as.character(train_splitted$v69)=='.b']='.b'
+x[as.character(train_splitted$v69)=='.c']='.c'
+x[as.character(train_splitted$v69)=='.d']='.d'
+train_splitted$v69 = factor(x)
+
+train_splitted$v78 = NULL
+
+train_splitted$v98= as.numeric(as.character(train_splitted$v98))
+train_splitted[is.na(train_splitted$v98),]$v98 = median(train_splitted$v98 , na.rm = T)
+
+train_splitted$v100 = as.numeric(as.character(train_splitted$v100))
+train_splitted[is.na(train_splitted$v100),]$v100 = median(train_splitted$v100 , na.rm = T)
+
+train_splitted$v102 = NULL
+
+train_splitted$v123 = NULL
+
+train_splitted$v124 = as.numeric(as.character(train_splitted$v124))
+train_splitted[is.na(train_splitted$v124),]$v124 = median(train_splitted$v124 , na.rm = T)
+
+train_splitted$v125 = as.numeric(as.character(train_splitted$v125))
+train_splitted[is.na(train_splitted$v125),]$v125 = median(train_splitted$v125 , na.rm = T)
+
+train_splitted$v126 = as.numeric(as.character(train_splitted$v126))
+train_splitted[is.na(train_splitted$v126),]$v126 = median(train_splitted$v126 , na.rm = T)
+
+train_splitted$v127 = NULL
+
+train_splitted$v128 = as.numeric(as.character(train_splitted$v128))
+train_splitted[is.na(train_splitted$v128),]$v128 = median(train_splitted$v128 , na.rm = T)
+
+train_splitted$v130 = as.numeric(as.character(train_splitted$v130))
+train_splitted[is.na(train_splitted$v130),]$v130 = median(train_splitted$v130 , na.rm
+= T)
+
+train_splitted$v131 = NULL
+
+train_splitted$v132 = as.numeric(as.character(train_splitted$v132))
+train_splitted[is.na(train_splitted$v132),]$v132 = median(train_splitted$v132 , na.rm = T)
+
+
+isco08toisei08_new= function(code){
+  nan = c("0", "100", "110", ".a", ".b",".c", ".d" , "310", "210")
+  if(is.na(code) | code %in% nan)
+   return(-1)
+  else
+    return(isco08toisei08(code)) 
+}
+train_splitted$v150 = unlist(lapply(X= as.character(train_splitted$v150), FUN = isco08toisei08_new))
+train_splitted$v150[train_splitted$v150 == -1]= median(train_splitted$v150[train_splitted$v150!=-1])
+
+train_splitted$v151 = NULL
+#y= unlist(lapply(X= as.character(train_splitted$v151), FUN = isco08toisei08_new))
+#y[y==-1]= median(y[y!=-1])
+
+train_splitted$v153 = NULL
+
+y = as.character(train_splitted$v154)
+tbl = as.data.frame(table(train_splitted$v154))
+tbl$Var1 = as.character(tbl$Var1)
+v154.other.low = tbl[tbl$Freq<11,]$Var1
+y[y %in% v154.other.low]='other'
+train_splitted$v154= y
+tbl0 = table(train_splitted[train_splitted$satisfied==0,]$v154, train_splitted[train_splitted$satisfied==0,]$satisfied)
+tbl1 = table(train_splitted[train_splitted$satisfied==1,]$v154, train_splitted[train_splitted$satisfied==1, ]$satisfied)
+tbl2 = merge(as.data.frame(tbl0), as.data.frame(tbl1), by='Var1')
+tbl2$Var1 = as.character(tbl2$Var1)
+v154.other2 = tbl2[abs(tbl2$Freq.x-tbl2$Freq.y)/(tbl2$Freq.x+tbl2$Freq.y)<0.2, ]$Var1
+y[y %in% v154.other2]='other'
+train_splitted$v154= as.factor(y)
+
+
+y = as.character(train_splitted$v155)
+tbl = as.data.frame(table(train_splitted$v155))
+tbl$Var1 = as.character(tbl$Var1)
+v155.other.low = tbl[tbl$Freq<15,]$Var1
+y[y %in% v155.other.low]='other'
+train_splitted$v155 = y
+tbl0 = table(train_splitted[train_splitted$satisfied==0,]$v155, train_splitted[train_splitted$satisfied==0,]$satisfied)
+tbl1 = table(train_splitted[train_splitted$satisfied==1,]$v155, train_splitted[train_splitted$satisfied==1, ]$satisfied)
+tbl2 = merge(as.data.frame(tbl0), as.data.frame(tbl1), by='Var1')
+tbl2$Var1 = as.character(tbl2$Var1)
+v155.other2= tbl2[abs(tbl2$Freq.x-tbl2$Freq.y)/(tbl2$Freq.x+tbl2$Freq.y)<0.25, ]$Var1
+y[y %in% v155.other2]='other'
+train_splitted$v155= as.factor(y)
+
+
+train_splitted$v161 = NULL
+
+
+y= as.character(train_splitted$v167)
+tbl0 = table(train_splitted[train_splitted$satisfied==0,]$v167, train_splitted[train_splitted$satisfied==0,]$satisfied)
+tbl1 = table(train_splitted[train_splitted$satisfied==1,]$v167, train_splitted[train_splitted$satisfied==1, ]$satisfied)
+tbl2 = merge(as.data.frame(tbl0), as.data.frame(tbl1), by='Var1')
+tbl2$Var1 = as.character(tbl2$Var1)
+v167.other= tbl2[abs(tbl2$Freq.x-tbl2$Freq.y)/(tbl2$Freq.x+tbl2$Freq.y)<0.25, ]$Var1
+y[y %in% v167.other]='other'
+train_splitted$v167= as.factor(y)
+
+
+x= train_splitted$v168
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+x[as.character(train_splitted$v168)=='.a']='.a'
+x[as.character(train_splitted$v168)=='.b']='.b'
+x[as.character(train_splitted$v168)=='.c']='.c'
+x[as.character(train_splitted$v168)=='.d']='.d'
+train_splitted$v168 = factor(x)
+
+
+
+train_splitted$v174 = NULL
+
+train_splitted$v195 = NULL
+train_splitted$v196 = NULL
+train_splitted$v197 = NULL
+train_splitted$v198 = NULL
+train_splitted$v199 = NULL
+train_splitted$v200 = NULL
+train_splitted$v201 = NULL
+train_splitted$v202 = NULL
+train_splitted$v203 = NULL
+
+train_splitted$v224 = as.numeric(as.character(train_splitted$v224))
+train_splitted[is.na(train_splitted$v224),]$v224 = median(train_splitted$v224 , na.rm = T)
+
+train_splitted$v228 = as.numeric(as.character(train_splitted$v228))
+train_splitted[is.na(train_splitted$v228),]$v228 = median(train_splitted$v228 , na.rm = T)
+
+
+
+
+train_splitted$v250 = as.numeric(as.character(train_splitted$v250))
+train_splitted$v251 = as.numeric(as.character(train_splitted$v251))
+train_splitted$diff = train_splitted$v251- train_splitted$v250
+train_splitted[is.na(train_splitted$diff),]$diff= 1000
+train_splitted[train_splitted$diff<0,]$v251=train_splitted[train_splitted$diff<0,]$v251+train_splitted[train_splitted$diff<0,]$v2
+50
+train_splitted[train_splitted$v250>100 | is.na(train_splitted$v250), ]$v250 = median(train_splitted$v250, na.rm=T)
+train_splitted[train_splitted$v251>100 | is.na(train_splitted$v251), ]$v251 = median(train_splitted$v251, na.rm=T)
+train_splitted$diff=NULL
+
+x= train_splitted$v252
+x= as.numeric(as.character(x))
+x[x<=40]= 1
+x[x>40]=2
+x[as.character(train_splitted$v252)=='.a']='.a'
+x[as.character(train_splitted$v252)=='.b']='.b'
+x[as.character(train_splitted$v252)=='.c']='.c'
+x[as.character(train_splitted$v252)=='.d']='.d'
+train_splitted$v252 = factor(x)
+
+train_splitted$v258 = NULL
+
+
+train_splitted$v262 = NULL
+
+x= train_splitted$v263
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train_splitted$v263)=='.a']='.a'
+x[as.character(train_splitted$v263)=='.b']='.b'
+x[as.character(train_splitted$v263)=='.c']='.c'
+x[as.character(train_splitted$v263)=='.d']='.d'
+train_splitted$v263 = factor(x)
+
+
+x= train_splitted$v264
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train_splitted$v264)=='.a']='.a'
+x[as.character(train_splitted$v264)=='.b']='.b'
+x[as.character(train_splitted$v264)=='.c']='.c'
+x[as.character(train_splitted$v264)=='.d']='.d'
+train_splitted$v264 = factor(x)
+
+
+
+x= train_splitted$v265
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train_splitted$v265)=='.a']='.a'
+x[as.character(train_splitted$v265)=='.b']='.b'
+x[as.character(train_splitted$v265)=='.c']='.c'
+x[as.character(train_splitted$v265)=='.d']='.d'
+train_splitted$v265 = factor(x)
+
+
+x= train_splitted$v266
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train_splitted$v266)=='.a']='.a'
+x[as.character(train_splitted$v266)=='.b']='.b'
+x[as.character(train_splitted$v266)=='.c']='.c'
+x[as.character(train_splitted$v266)=='.d']='.d'
+train_splitted$v266 = factor(x)
+
+
+
+train_splitted$v267 = NULL
+train_splitted$v268 = NULL
+train_splitted$v269 = NULL
+train_splitted$v270 = NULL
+
+
+
+```
+
+
+
+#data cleaning test_splitted
+```{r}
+
+
+test_splitted$satisfied = as.factor(test_splitted$satisfied)
+
+getmode <- function(v) {
+  as.character(as.data.frame(table(v))[which.max(table(v)),1])
+}
+
+ID = test_splitted$id
+test_splitted$id = NULL
+
+test_splitted$v3 = as.numeric(as.character(test_splitted$v3))
+test_splitted[is.na(test_splitted$v3),]$v3 = median(train_splitted$v3 , na.rm = T)
+
+test_splitted$v4 = NULL
+test_splitted$v5 = NULL
+test_splitted$v17 = NULL
+
+test_splitted$v20 = as.character((test_splitted$v20))
+test_splitted$v20 = as.factor(substring(test_splitted$v20,1,2))
+
+test_splitted$v25 = NULL
+
+
+test_splitted$v57= as.character(test_splitted$v57)
+test_splitted[test_splitted$v57=="5555", ]$v57= "other"
+test_splitted$v57 = as.numeric(test_splitted$v57)
+test_splitted[is.na(test_splitted$v57),]$v57 = median(test_splitted$v57 , na.rm = T)
+
+test_splitted$v59= as.character(test_splitted$v59)
+test_splitted[test_splitted$v59=="5555", ]$v59= "other"
+test_splitted$v59 = as.numeric(test_splitted$v59)
+test_splitted[is.na(test_splitted$v59),]$v59 = median(test_splitted$v59 , na.rm = T)
+
+test_splitted$v61= as.character(test_splitted$v61)
+test_splitted[test_splitted$v61=="5555", ]$v61= "other"
+test_splitted$v61 = as.numeric(test_splitted$v61)
+test_splitted[is.na(test_splitted$v61),]$v61 = median(test_splitted$v61 , na.rm = T)
+
+
+test_splitted$v63= as.character(test_splitted$v63)
+test_splitted[test_splitted$v63=="5555", ]$v63= "other"
+test_splitted$v63 = as.numeric(test_splitted$v63)
+test_splitted[is.na(test_splitted$v63),]$v63 = median(test_splitted$v63 , na.rm = T)
+
+
+
+test_splitted$v64 = as.numeric(as.character(test_splitted$v64))
+test_splitted[is.na(test_splitted$v64),]$v64 = median(test_splitted$v64 , na.rm = T)
+
+x= test_splitted$v69
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+
+x[as.character(test_splitted$v69)=='.a']='.a'
+x[as.character(test_splitted$v69)=='.b']='.b'
+x[as.character(test_splitted$v69)=='.c']='.c'
+x[as.character(test_splitted$v69)=='.d']='.d'
+test_splitted$v69 = factor(x)
+
+test_splitted$v78 = NULL
+
+test_splitted$v98= as.numeric(as.character(test_splitted$v98))
+test_splitted[is.na(test_splitted$v98),]$v98 = median(train_splitted$v98 , na.rm = T)
+
+test_splitted$v100 = as.numeric(as.character(test_splitted$v100))
+test_splitted[is.na(test_splitted$v100),]$v100 = median(train_splitted$v100 , na.rm = T)
+
+test_splitted$v102 = NULL
+test_splitted$v123 = NULL
+
+test_splitted$v124 = as.numeric(as.character(test_splitted$v124))
+test_splitted[is.na(test_splitted$v124),]$v124 = median(train_splitted$v124 , na.rm = T)
+
+test_splitted$v125 = as.numeric(as.character(test_splitted$v125))
+#test_splitted[is.na(test_splitted$v125),]$v125 = median(train_splitted$v125 , na.rm = T)
+
+test_splitted$v126 = as.numeric(as.character(test_splitted$v126))
+test_splitted[is.na(test_splitted$v126),]$v126 = median(train_splitted$v126 , na.rm = T)
+
+test_splitted$v127 = NULL
+
+test_splitted$v128 = as.numeric(as.character(test_splitted$v128))
+test_splitted[is.na(test_splitted$v128),]$v128 = median(train_splitted$v128 , na.rm = T)
+
+test_splitted$v130 = as.numeric(as.character(test_splitted$v130))
+test_splitted[is.na(test_splitted$v130),]$v130 = median(train_splitted$v130 , na.rm = T)
+
+test_splitted$v131 = NULL
+
+test_splitted$v132 = as.numeric(as.character(test_splitted$v132))
+test_splitted[is.na(test_splitted$v132),]$v132 = median(train_splitted$v132 , na.rm = T)
+
+test_splitted$v150 = unlist(lapply(X= as.character(test_splitted$v150), FUN = isco08toisei08_new))
+test_splitted$v150[test_splitted$v150 == -1]= median(train_splitted$v150[train_splitted$v150!=-1])
+
+test_splitted$v151 = NULL
+test_splitted$v153 = NULL
+
+
+y = as.character(test_splitted$v154)
+y[y %in% v154.other.low]='other'
+y[y %in% v154.other2 | !y%in% levels(train_splitted$v154)]='other'
+test_splitted$v154= as.factor(y)
+
+
+
+y = as.character(test_splitted$v155)
+y[y %in% v155.other.low]='other'
+y[y %in% v155.other2 | !y%in% levels(train_splitted$v155)]='other'
+test_splitted$v155= as.factor(y)
+
+test_splitted$v161 = NULL
+
+
+y= as.character(test_splitted$v167)
+y[y %in% v167.other | !y%in% levels(train_splitted$v167)]='other'
+test_splitted$v167= as.factor(y)
+
+
+x= test_splitted$v168
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+x[as.character(test_splitted$v168)=='.a']='.a'
+x[as.character(test_splitted$v168)=='.b']='.b'
+x[as.character(test_splitted$v168)=='.c']='.c'
+x[as.character(test_splitted$v168)=='.d']='.d'
+test_splitted$v168 = factor(x)
+
+test_splitted$v174 = NULL
+test_splitted$v195 = NULL
+test_splitted$v196 = NULL
+test_splitted$v197 = NULL
+test_splitted$v198 = NULL
+test_splitted$v199 = NULL
+test_splitted$v200 = NULL
+test_splitted$v201 = NULL
+test_splitted$v202 = NULL
+test_splitted$v203 = NULL
+
+test_splitted$v224 = as.numeric(as.character(test_splitted$v224))
+test_splitted[is.na(test_splitted$v224),]$v224 = median(train_splitted$v224 , na.rm = T)
+
+test_splitted$v228 = as.numeric(as.character(test_splitted$v228))
+test_splitted[is.na(test_splitted$v228),]$v228 = median(train_splitted$v228 , na.rm = T)
+
+
+
+
+test_splitted$v250 = as.numeric(as.character(test_splitted$v250))
+test_splitted$v251 = as.numeric(as.character(test_splitted$v251))
+test_splitted$diff = test_splitted$v251- test_splitted$v250
+test_splitted[is.na(test_splitted$diff),]$diff= 1000
+test_splitted[test_splitted$diff<0,]$v251=test_splitted[test_splitted$diff<0,]$v251+test_splitted[test_splitted$diff<0,]$v250
+test_splitted[test_splitted$v250>100 | is.na(test_splitted$v250), ]$v250 = median(train_splitted$v250, na.rm=T)
+test_splitted[test_splitted$v251>100 | is.na(test_splitted$v251), ]$v251 = median(train_splitted$v251, na.rm=T)
+test_splitted$diff=NULL
+
+
+x= test_splitted$v252
+x= as.numeric(as.character(x))
+x[
+x<=40]= 1
+x[x>40]=2
+x[as.character(test_splitted$v252)=='.a']='.a'
+x[as.character(test_splitted$v252)=='.b']='.b'
+x[as.character(test_splitted$v252)=='.c']='.c'
+x[as.character(test_splitted$v252)=='.d']='.d'
+test_splitted$v252 = factor(x)
+
+
+test_splitted$v258 = NULL
+test_splitted$v262 = NULL
+
+
+x= test_splitted$v263
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test_splitted$v263)=='.a']='.a'
+x[as.character(test_splitted$v263)=='.b']='.b'
+x[as.character(test_splitted$v263)=='.c']='.c'
+x[as.character(test_splitted$v263)=='.d']='.d'
+test_splitted$v263 = factor(x)
+
+
+x= test_splitted$v264
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test_splitted$v264)=='.a']='.a'
+x[as.character(test_splitted$v264)=='.b']='.b'
+x[as.character(test_splitted$v264)=='.c']='.c'
+x[as.character(test_splitted$v264)=='.d']='.d'
+test_splitted$v264 = factor(x)
+
+
+x= test_splitted$v265
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test_splitted$v265)=='.a']='.a'
+x[as.character(test_splitted$v265)=='.b']='.b'
+x[as.character(test_splitted$v265)=='.c']='.c'
+x[as.character(test_splitted$v265)=='.d']='.d'
+test_splitted$v265 = factor(x)
+
+
+x= test_splitted$v266
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test_splitted$v266)=='.a']='.a'
+x[as.character(test_splitted$v266)=='.b']='.b'
+x[as.character(test_splitted$v266)=='.c']='.c'
+x[as.character(test_splitted$v266)=='.d']='.d'
+test_splitted$v266 = factor(x)
+
+
+test_splitted$v267 = NULL
+test_splitted$v268 = NULL
+test_splitted$v269 = NULL
+test_splitted$v270 = NULL
+
+
+for (i in 1:ncol(test_splitted)){
+  v= test_splitted[,i]
+  if(class(v)=="factor"){
+    v= as.character(v)
+    v[!v%in%levels(train_splitted[,i])]=getmode(train_splitted[,i])
+    test_splitted[,i]= as.factor(v)
+  }
+}
+
+test_splitted= rbind(train_splitted[1,], test_splitted)
+test_splitted = test_splitted[-1,]
+
+```

@@ -1,0 +1,85 @@
+---
+title: "knn"
+author: "Maziar"
+date: "March 12, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+#KNN
+```{r}
+
+
+# for (i in 1:ncol(train)){
+#   if(class(train[,i])!="factor")
+#   {
+#     u= unique(train[, i])
+#     if(!(length(u)==2 & min(u)==0 &  max(u)==1)){
+#       train_scaled[,i]= scale(train_scaled[,i])
+#       test_scaled[,i] = scale(test_scaled[,i])
+#     }
+#       
+#   }
+# }
+selected_train_splitted_fixed = selected_train_splitted
+selected_train_splitted_fixed$satisfied = NULL
+for (i in 1:ncol(selected_train_splitted_fixed)){
+  y = selected_train_splitted_fixed[,i]
+  if (is.factor(y) & colnames(selected_train_splitted_fixed)[i]!="cntry" & colnames(selected_train_splitted_fixed)[i]!="v154")
+  {
+    y= as.numeric(as.character(y))
+    y[is.na(y)] = median(y , na.rm = T)
+  }
+  selected_train_splitted_fixed[,i]=y
+  
+}
+
+selected_test_splitted = test_splitted %>% select(colnames(selected_train_splitted))
+
+selected_test_splitted_fixed = selected_test_splitted
+
+selected_test_splitted_fixed$satisfied = NULL
+for (i in 1:ncol(selected_test_splitted_fixed)){
+  y = selected_test_splitted_fixed[,i]
+  if (is.factor(y) & colnames(selected_test_splitted_fixed)[i]!="cntry" & colnames(selected_test_splitted_fixed)[i]!="v154")
+  {
+    y= as.numeric(as.character(y))
+    y[is.na(y)] = median(y , na.rm = T)
+  }
+  selected_test_splitted_fixed[,i]=y
+  
+}
+
+selected_train_splitted_fixed = dummy_cols(selected_train_splitted_fixed, remove_first_dummy = T, remove_selected_columns = T )
+selected_test_splitted_fixed =  dummy_cols(selected_test_splitted_fixed, remove_first_dummy = T, remove_selected_columns = T )
+
+
+library(caret)
+selected_train_splitted_fixed$satisfied = selected_train_splitted$satisfied
+
+control <- trainControl(method="cv",number = 10)
+knnFit <- train(as.factor(satisfied) ~ ., data = selected_train_splitted_fixed, method = "knn", trControl = control ,tuneLength = 40)
+knnFit
+
+selected_train_splitted_fixed$satisfied = NULL
+scaled_train_splitted_fixed = scale(as.matrix(selected_train_splitted_fixed))
+
+
+scaled_test_splitted_fixed = scale(as.matrix(selected_test_splitted_fixed))
+
+ knn.pred.splitted <- knn(scaled_train_splitted_fixed,scaled_test_splitted_fixed,cl=as.factor(selected_train_splitted$satisfied),k=5, prob= T)
+ knn.probs.test.splitted= attributes(knn.pred.splitted)$prob
+ 
+ roc_knn_splitted = roc(predictor = knn.probs.test.splitted,  response = test_splitted$satisfied)
+auc(roc_knn_splitted)
+ 
+#knn_final= data.frame(Id= ID, Predicted =knn.probs )
+#write.csv(x = knn_final, file = "knn_pred.csv", row.names = F)
+```
+

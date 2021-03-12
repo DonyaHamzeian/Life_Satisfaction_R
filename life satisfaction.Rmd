@@ -1,0 +1,691 @@
+---
+title: "Life Satisfaction"
+author: "Maziar"
+date: "March 4, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#load libraries
+```{r}
+library(class)
+library(fastDummies)
+library(randomForest)
+library(ISCO08ConveRsions)
+library(gbm)
+library(caret)
+library(pROC)
+library(e1071)
+library(dplyr)
+
+```
+
+#reading the data
+```{r}
+#raw = read.csv('train_raw.csv')
+train = read.csv('train.csv')
+train_unchanged = read.csv("train.csv", stringsAsFactors = F)
+train$id = NULL
+
+train_unchanged$a =apply(train_unchanged, 1, function(x)sum(x==".a", na.rm=T))
+train_unchanged$b =apply(train_unchanged, 1, function(x)sum(x==".b", na.rm=T))
+train_unchanged$c =apply(train_unchanged, 1, function(x)sum(x==".c", na.rm=T))
+train_unchanged$d =apply(train_unchanged, 1, function(x)sum(x==".d", na.rm=T))
+train$a = train_unchanged$a
+train$b = train_unchanged$b
+train$c = train_unchanged$c
+train$d = train_unchanged$d
+
+
+test = read.csv('test.csv')
+test_unchanged = read.csv("test.csv", stringsAsFactors = F)
+
+test_unchanged$a =apply(test_unchanged, 1, function(x)sum(x==".a", na.rm=T))
+test_unchanged$b =apply(test_unchanged, 1, function(x)sum(x==".b", na.rm=T))
+test_unchanged$c =apply(test_unchanged, 1, function(x)sum(x==".c", na.rm=T))
+test_unchanged$d =apply(test_unchanged, 1, function(x)sum(x==".d", na.rm=T))
+test$a = test_unchanged$a
+test$b = test_unchanged$b
+test$c = test_unchanged$c
+test$d = test_unchanged$d
+
+```
+
+
+#Boosting
+```{r}
+
+
+gbm.fit = gbm((as.numeric(satisfied)-1)~., data = train, distribution = "bernoulli", n.trees = 1000, interaction.depth = 4, shrinkage = 0.01)
+
+# gbm_pred = data.frame(Id = ID, Predicted = gbm.pred.test)
+# write.csv(x= gbm_pred, file = "gbm_pred.csv", row.names = F)
+
+
+```
+
+
+#SVM
+```{r}
+
+selected_train  = train %>% select(v98, v224, v20, v74, v101,v79, satisfied)
+svm.fit = svm(satisfied ~ ., data = selected_train, kernel = "linear", cost = 0.25, scale = F, probability= T)
+
+
+
+```
+
+#Random Forest model
+```{r}
+rf.fit = randomForest(as.factor(satisfied)~.,data=train, ntree = 200, mtry =60)
+
+# sorted_rf_importance =  arrange(data.frame(vars = row.names(rf$importance), MeanDecreaseGini = rf$importance), desc(MeanDecreaseGini)) 
+
+
+# rf_pred= data.frame(Id= ID, Predicted =probs[,2] )
+# write.csv(x = rf_pred, file = "rf_pred.csv", row.names = F)
+```
+
+
+#Stacking
+```{r}
+
+svm.pred.test = predict(svmfit, test, decision.values = T,  probability = TRUE)
+
+svm.probs.test = attr(svm.pred.test, "probabilities")[, 1]
+
+gbm.prob.test = predict(gbm.fit, test, n.trees = 1000, type = "response")
+
+rf.probs.test = predict(rf.fit, test, type = "prob")
+
+
+final_probs = w1*svm.probs.test+ w2*gbm.prob.test+w3*rf.probs.test
+
+
+```
+
+
+
+
+#data cleaning train
+```{r}
+
+train$satisfied = as.factor(train$satisfied)
+
+train$v3 = as.numeric(as.character(train$v3))
+train[is.na(train$v3),]$v3 = median(train$v3 , na.rm = T)
+
+train$v4 = NULL
+
+train$v5 = NULL
+
+train$v17 = NULL
+
+train$v20 = as.character((train$v20))
+train$v20 = as.factor(substring(train$v20,1,2))
+
+train$v25 = NULL
+
+train$v57= as.character(train$v57)
+train[train$v57=="5555", ]$v57= "other"
+train$v57 = as.numeric(train$v57)
+train[is.na(train$v57),]$v57 = median(train$v57 , na.rm = T)
+
+train$v59= as.character(train$v59)
+train[train$v59=="5555", ]$v59= "other"
+train$v59 = as.numeric(train$v59)
+train[is.na(train$v59),]$v59 = median(train$v59 , na.rm = T)
+
+train$v61= as.character(train$v61)
+train[train$v61=="5555", ]$v61= "other"
+train$v61 = as.numeric(train$v61)
+train[is.na(train$v61),]$v61 = median(train$v61 , na.rm = T)
+
+
+train$v63= as.character(train$v63)
+train[train$v63=="5555", ]$v63= "other"
+train$v63 = as.numeric(train$v63)
+train[is.na(train$v63),]$v63 = median(train$v63 , na.rm = T)
+
+
+train$v64 = as.numeric(as.character(train$v64))
+train[is.na(train$v64),]$v64 = median(train$v64 , na.rm = T)
+
+x= train$v69
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+
+x[as.character(train$v69)=='.a']='.a'
+x[as.character(train$v69)=='.b']='.b'
+x[as.character(train$v69)=='.c']='.c'
+x[as.character(train$v69)=='.d']='.d'
+train$v69 = factor(x)
+
+train$v78 = NULL
+
+train$v98= as.numeric(as.character(train$v98))
+train[is.na(train$v98),]$v98 = median(train$v98 , na.rm = T)
+
+train$v100 = as.numeric(as.character(train$v100))
+train[is.na(train$v100),]$v100 = median(train$v100 , na.rm = T)
+
+train$v102 = NULL
+
+train$v123 = NULL
+
+train$v124 = as.numeric(as.character(train$v124))
+train[is.na(train$v124),]$v124 = median(train$v124 , na.rm = T)
+
+train$v125 = as.numeric(as.character(train$v125))
+train[is.na(train$v125),]$v125 = median(train$v125 , na.rm = T)
+
+train$v126 = as.numeric(as.character(train$v126))
+train[is.na(train$v126),]$v126 = median(train$v126 , na.rm = T)
+
+train$v127 = NULL
+
+train$v128 = as.numeric(as.character(train$v128))
+train[is.na(train$v128),]$v128 = median(train$v128 , na.rm = T)
+
+train$v130 = as.numeric(as.character(train$v130))
+train[is.na(train$v130),]$v130 = median(train$v130 , na.rm = T)
+
+train$v131 = NULL
+
+train$v132 = as.numeric(as.character(train$v132))
+train[is.na(train$v132),]$v132 = median(train$v132 , na.rm = T)
+
+
+isco08toisei08_new= function(code){
+  nan = c("0", "100", "110", ".a", ".b",".c", ".d" , "310", "210")
+  if(is.na(code) | code %in% nan)
+   return(-1)
+  else
+    return(isco08toisei08(code)) 
+}
+train$v150 = unlist(lapply(X= as.character(train$v150), FUN = isco08toisei08_new))
+train$v150[train$v150 == -1]= median(train$v150[train$v150!=-1])
+
+train$v151 = NULL
+#y= unlist(lapply(X= as.character(train$v151), FUN = isco08toisei08_new))
+#y[y==-1]= median(y[y!=-1])
+
+train$v153 = NULL
+
+y = as.character(train$v154)
+tbl = as.data.frame(table(train$v154))
+tbl$Var1 = as.character(tbl$Var1)
+v154.other.low = tbl[tbl$Freq<11,]$Var1
+y[y %in% v154.other.low]='other'
+train$v154= y
+tbl0 = table(train[train$satisfied==0,]$v154, train[train$satisfied==0,]$satisfied)
+tbl1 = table(train[train$satisfied==1,]$v154, train[train$satisfied==1, ]$satisfied)
+tbl2 = merge(as.data.frame(tbl0), as.data.frame(tbl1), by='Var1')
+tbl2$Var1 = as.character(tbl2$Var1)
+v154.other2 = tbl2[abs(tbl2$Freq.x-tbl2$Freq.y)/(tbl2$Freq.x+tbl2$Freq.y)<0.2, ]$Var1
+y[y %in% v154.other2]='other'
+train$v154= as.factor(y)
+
+
+y = as.character(train$v155)
+tbl = as.data.frame(table(train$v155))
+tbl$Var1 = as.character(tbl$Var1)
+v155.other.low = tbl[tbl$Freq<15,]$Var1
+y[y %in% v155.other.low]='other'
+train$v155 = y
+tbl0 = table(train[train$satisfied==0,]$v155, train[train$satisfied==0,]$satisfied)
+tbl1 = table(train[train$satisfied==1,]$v155, train[train$satisfied==1, ]$satisfied)
+tbl2 = merge(as.data.frame(tbl0), as.data.frame(tbl1), by='Var1')
+tbl2$Var1 = as.character(tbl2$Var1)
+v155.other2= tbl2[abs(tbl2$Freq.x-tbl2$Freq.y)/(tbl2$Freq.x+tbl2$Freq.y)<0.25, ]$Var1
+y[y %in% v155.other2]='other'
+train$v155= as.factor(y)
+
+
+train$v161 = NULL
+
+
+y= as.character(train$v167)
+tbl0 = table(train[train$satisfied==0,]$v167, train[train$satisfied==0,]$satisfied)
+tbl1 = table(train[train$satisfied==1,]$v167, train[train$satisfied==1, ]$satisfied)
+tbl2 = merge(as.data.frame(tbl0), as.data.frame(tbl1), by='Var1')
+tbl2$Var1 = as.character(tbl2$Var1)
+v167.other= tbl2[abs(tbl2$Freq.x-tbl2$Freq.y)/(tbl2$Freq.x+tbl2$Freq.y)<0.25, ]$Var1
+y[y %in% v167.other]='other'
+train$v167= as.factor(y)
+
+
+x= train$v168
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+x[as.character(train$v168)=='.a']='.a'
+x[as.character(train$v168)=='.b']='.b'
+x[as.character(train$v168)=='.c']='.c'
+x[as.character(train$v168)=='.d']='.d'
+train$v168 = factor(x)
+
+
+
+train$v174 = NULL
+
+train$v195 = NULL
+train$v196 = NULL
+train$v197 = NULL
+train$v198 = NULL
+train$v199 = NULL
+train$v200 = NULL
+train$v201 = NULL
+train$v202 = NULL
+train$v203 = NULL
+
+train$v224 = as.numeric(as.character(train$v224))
+train[is.na(train$v224),]$v224 = median(train$v224 , na.rm = T)
+
+train$v228 = as.numeric(as.character(train$v228))
+train[is.na(train$v228),]$v228 = median(train$v228 , na.rm = T)
+
+
+
+
+train$v250 = as.numeric(as.character(train$v250))
+train$v251 = as.numeric(as.character(train$v251))
+train$diff = train$v251- train$v250
+train[is.na(train$diff),]$diff= 1000
+train[train$diff<0,]$v251=train[train$diff<0,]$v251+train[train$diff<0,]$v250
+train[train$v250>100 | is.na(train$v250), ]$v250 = median(train$v250, na.rm=T)
+train[train$v251>100 | is.na(train$v251), ]$v251 = median(train$v251, na.rm=T)
+train$diff=NULL
+
+x= train$v252
+x= as.numeric(as.character(x))
+x[x<=40]= 1
+x[x>40]=2
+x[as.character(train$v252)=='.a']='.a'
+x[as.character(train$v252)=='.b']='.b'
+x[as.character(train$v252)=='.c']='.c'
+x[as.character(train$v252)=='.d']='.d'
+train$v252 = factor(x)
+
+train$v258 = NULL
+
+
+train$v262 = NULL
+
+x= train$v263
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train$v263)=='.a']='.a'
+x[as.character(train$v263)=='.b']='.b'
+x[as.character(train$v263)=='.c']='.c'
+x[as.character(train$v263)=='.d']='.d'
+train$v263 = factor(x)
+
+
+x= train$v264
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train$v264)=='.a']='.a'
+x[as.character(train$v264)=='.b']='.b'
+x[as.character(train$v264)=='.c']='.c'
+x[as.character(train$v264)=='.d']='.d'
+train$v264 = factor(x)
+
+
+
+x= train$v265
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train$v265)=='.a']='.a'
+x[as.character(train$v265)=='.b']='.b'
+x[as.character(train$v265)=='.c']='.c'
+x[as.character(train$v265)=='.d']='.d'
+train$v265 = factor(x)
+
+
+x= train$v266
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(train$v266)=='.a']='.a'
+x[as.character(train$v266)=='.b']='.b'
+x[as.character(train$v266)=='.c']='.c'
+x[as.character(train$v266)=='.d']='.d'
+train$v266 = factor(x)
+
+
+
+train$v267 = NULL
+train$v268 = NULL
+train$v269 = NULL
+train$v270 = NULL
+
+
+
+```
+
+
+
+#data cleaning test
+```{r}
+
+
+
+getmode <- function(v) {
+  as.character(as.data.frame(table(v))[which.max(table(v)),1])
+}
+
+ID = test$id
+test$id = NULL
+
+test$v3 = as.numeric(as.character(test$v3))
+test[is.na(test$v3),]$v3 = median(train$v3 , na.rm = T)
+
+test$v4 = NULL
+test$v5 = NULL
+test$v17 = NULL
+
+test$v20 = as.character((test$v20))
+test$v20 = as.factor(substring(test$v20,1,2))
+
+test$v25 = NULL
+
+
+test$v57= as.character(test$v57)
+test[test$v57=="5555", ]$v57= "other"
+test$v57 = as.numeric(test$v57)
+test[is.na(test$v57),]$v57 = median(test$v57 , na.rm = T)
+
+test$v59= as.character(test$v59)
+test[test$v59=="5555", ]$v59= "other"
+test$v59 = as.numeric(test$v59)
+test[is.na(test$v59),]$v59 = median(test$v59 , na.rm = T)
+
+test$v61= as.character(test$v61)
+test[test$v61=="5555", ]$v61= "other"
+test$v61 = as.numeric(test$v61)
+test[is.na(test$v61),]$v61 = median(test$v61 , na.rm = T)
+
+
+test$v63= as.character(test$v63)
+test[test$v63=="5555", ]$v63= "other"
+test$v63 = as.numeric(test$v63)
+test[is.na(test$v63),]$v63 = median(test$v63 , na.rm = T)
+
+
+
+test$v64 = as.numeric(as.character(test$v64))
+test[is.na(test$v64),]$v64 = median(test$v64 , na.rm = T)
+
+x= test$v69
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+
+x[as.character(test$v69)=='.a']='.a'
+x[as.character(test$v69)=='.b']='.b'
+x[as.character(test$v69)=='.c']='.c'
+x[as.character(test$v69)=='.d']='.d'
+test$v69 = factor(x)
+
+test$v78 = NULL
+
+test$v98= as.numeric(as.character(test$v98))
+test[is.na(test$v98),]$v98 = median(train$v98 , na.rm = T)
+
+test$v100 = as.numeric(as.character(test$v100))
+test[is.na(test$v100),]$v100 = median(train$v100 , na.rm = T)
+
+test$v102 = NULL
+test$v123 = NULL
+
+test$v124 = as.numeric(as.character(test$v124))
+test[is.na(test$v124),]$v124 = median(train$v124 , na.rm = T)
+
+test$v125 = as.numeric(as.character(test$v125))
+#test[is.na(test$v125),]$v125 = median(train$v125 , na.rm = T)
+
+test$v126 = as.numeric(as.character(test$v126))
+test[is.na(test$v126),]$v126 = median(train$v126 , na.rm = T)
+
+test$v127 = NULL
+
+test$v128 = as.numeric(as.character(test$v128))
+test[is.na(test$v128),]$v128 = median(train$v128 , na.rm = T)
+
+test$v130 = as.numeric(as.character(test$v130))
+test[is.na(test$v130),]$v130 = median(train$v130 , na.rm = T)
+
+test$v131 = NULL
+
+test$v132 = as.numeric(as.character(test$v132))
+test[is.na(test$v132),]$v132 = median(train$v132 , na.rm = T)
+
+test$v150 = unlist(lapply(X= as.character(test$v150), FUN = isco08toisei08_new))
+test$v150[test$v150 == -1]= median(train$v150[train$v150!=-1])
+
+test$v151 = NULL
+test$v153 = NULL
+
+
+y = as.character(test$v154)
+y[y %in% v154.other.low]='other'
+y[y %in% v154.other2 | !y%in% levels(train$v154)]='other'
+test$v154= as.factor(y)
+
+
+
+y = as.character(test$v155)
+y[y %in% v155.other.low]='other'
+y[y %in% v155.other2 | !y%in% levels(train$v155)]='other'
+test$v155= as.factor(y)
+
+test$v161 = NULL
+
+
+y= as.character(test$v167)
+y[y %in% v167.other | !y%in% levels(train$v167)]='other'
+test$v167= as.factor(y)
+
+
+x= test$v168
+x= as.numeric(as.character(x))
+x[x>0 & x<10]= 1
+x[x>=10 & x<25]=10
+x[x>=25 & x<100]= 25
+x[x>=100 & x< 500]= 100
+x[x>=500]= 500
+x[as.character(test$v168)=='.a']='.a'
+x[as.character(test$v168)=='.b']='.b'
+x[as.character(test$v168)=='.c']='.c'
+x[as.character(test$v168)=='.d']='.d'
+test$v168 = factor(x)
+
+test$v174 = NULL
+test$v195 = NULL
+test$v196 = NULL
+test$v197 = NULL
+test$v198 = NULL
+test$v199 = NULL
+test$v200 = NULL
+test$v201 = NULL
+test$v202 = NULL
+test$v203 = NULL
+
+test$v224 = as.numeric(as.character(test$v224))
+test[is.na(test$v224),]$v224 = median(train$v224 , na.rm = T)
+
+test$v228 = as.numeric(as.character(test$v228))
+test[is.na(test$v228),]$v228 = median(train$v228 , na.rm = T)
+
+
+
+
+test$v250 = as.numeric(as.character(test$v250))
+test$v251 = as.numeric(as.character(test$v251))
+test$diff = test$v251- test$v250
+test[is.na(test$diff),]$diff= 1000
+test[test$diff<0,]$v251=test[test$diff<0,]$v251+test[test$diff<0,]$v250
+test[test$v250>100 | is.na(test$v250), ]$v250 = median(train$v250, na.rm=T)
+test[test$v251>100 | is.na(test$v251), ]$v251 = median(train$v251, na.rm=T)
+test$diff=NULL
+
+
+x= test$v252
+x= as.numeric(as.character(x))
+x[x<=40]= 1
+x[x>40]=2
+x[as.character(test$v252)=='.a']='.a'
+x[as.character(test$v252)=='.b']='.b'
+x[as.character(test$v252)=='.c']='.c'
+x[as.character(test$v252)=='.d']='.d'
+test$v252 = factor(x)
+
+
+test$v258 = NULL
+test$v262 = NULL
+
+
+x= test$v263
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test$v263)=='.a']='.a'
+x[as.character(test$v263)=='.b']='.b'
+x[as.character(test$v263)=='.c']='.c'
+x[as.character(test$v263)=='.d']='.d'
+test$v263 = factor(x)
+
+
+x= test$v264
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test$v264)=='.a']='.a'
+x[as.character(test$v264)=='.b']='.b'
+x[as.character(test$v264)=='.c']='.c'
+x[as.character(test$v264)=='.d']='.d'
+test$v264 = factor(x)
+
+
+x= test$v265
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test$v265)=='.a']='.a'
+x[as.character(test$v265)=='.b']='.b'
+x[as.character(test$v265)=='.c']='.c'
+x[as.character(test$v265)=='.d']='.d'
+test$v265 = factor(x)
+
+
+x= test$v266
+x= as.numeric(as.character(x))
+x= 2015-x
+x[x>=0 & x<10 ]= 1
+x[x>=10 & x<24 ]=2
+x[x>=24 & x<40]=3
+x[x>=40 & x<55]=4
+x[x>=55 & x<70]=5
+x[x>=70 ]=6
+x[as.character(test$v266)=='.a']='.a'
+x[as.character(test$v266)=='.b']='.b'
+x[as.character(test$v266)=='.c']='.c'
+x[as.character(test$v266)=='.d']='.d'
+test$v266 = factor(x)
+
+
+test$v267 = NULL
+test$v268 = NULL
+test$v269 = NULL
+test$v270 = NULL
+
+
+for (i in 1:ncol(test)){
+  v= test[,i]
+  if(class(v)=="factor"){
+    v= as.character(v)
+    v[!v%in%levels(train[,i])]=getmode(train[,i])
+    test[,i]= as.factor(v)
+  }
+}
+
+test= rbind(train[1,-(ncol(train)-4)], test)
+test = test[-1,]
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

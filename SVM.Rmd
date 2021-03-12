@@ -1,0 +1,81 @@
+---
+title: "SVM"
+author: "Donya Hamzeian"
+date: "3/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#Variable selection- Factors
+```{r}
+chi2_p_values = c()
+names1 = c()
+k=1
+for (i in 1: length(train)){
+  if (class(train[,i])=="factor"){
+    names1[k] = colnames(train)[i]
+    chi2 = chisq.test(table(train[,i], train$satisfied))
+    chi2_p_values[k] = chi2$p.value
+    k=k+1
+    
+  }
+}
+chi2_df = data.frame(names1, p.values = chi2_p_values)
+chi2_df = chi2_df %>% filter(p.values<0.0001)
+```
+
+#variable selection- logistic regression
+```{r}
+logestic_p_values = c()
+names2 = c()
+k=1
+for (i in 1: length(train)){
+  if (class(train[,i])=="numeric" | class(train[,i])=="integer"){
+    names2[k] = colnames(train)[i]
+    model = glm(train$satisfied~train[,i] , family = "binomial")
+    logestic_p_values[k] = coef(summary(model))[2,4]
+    k=k+1
+    
+  }
+}
+logestic_df = data.frame(names2, p.values = logestic_p_values)
+logestic_df = logestic_df %>% filter(p.values<0.001)
+```
+
+#variable selection from test splitted and train spliited
+```{r}
+allnames = c(as.character(logestic_df$names2), as.character(chi2_df$names1) )
+selected_train_splitted = train_splitted %>% select(allnames)
+selected_test_splitted = test_splitted %>% select(allnames)
+
+```
+
+
+
+
+#SVM on splitted data
+```{r}
+importantvars10 = as.character(sorted_rf_importance[1:20, "vars"])
+
+selected_train_splitted = train_splitted %>%  select(importantvars10, as.character(summary(gbm.fit.splitted)[1:20, 'var']), satisfied)
+selected_train_splitted$v20 = NULL
+# because of this error:   factor v178 has new levels .a
+
+i=0.1
+svm.fit.splitted = svm(satisfied ~ ., data = selected_train_splitted, kernel = "polynomial", cost = i, scale = F, probability= T, gamma=0.5, degree=2)
+
+svm.pred.test.splitted = predict(svm.fit.splitted, test_splitted, decision.values = T,  probability = TRUE)
+svm.probs.test.splitted = attr(svm.pred.test.splitted, "probabilities")[, 1]
+
+roc_svm = roc(predictor = svm.probs.test.splitted,  response = test_splitted$satisfied)
+print("cost is ")
+print(i)
+print(auc(roc_svm))
+```
+
+
+
